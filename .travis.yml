@@ -1,0 +1,8 @@
+script: bash ./deploy.sh
+language: node_js
+node_js:
+- '5.0'
+env:
+  global:
+  - GH_REF: github.com/rikukissa/elm-snake.git
+  - secure: "UwjmTHpFpUX4Tb+YW9SjXNI8HYJf62BOUx5jhisGJY8GtPm+3LWzZJuNTqtq1URz2E0uSASvPmr7p43OL+g7q4217ZoIH/LhJvn9Pw0NTJkSXKBBqJeHU/pVEAXpS7TR0q4J5dLRW9/Ka5gaGiR62qXNDZk9GPCny4s7THx7wUyadtf7TdgBZtfXOaE3Mq5JhKRxNmLYNTLG43Qo7sNzgDDtmtChKhMDEFV8FYc0dS395wMjNgS747TpHMA1dfnW/PNDta+tEsFRA4MjcqH9cMLjIrdvZ/tDTbLJMREvXcY+sc4HFG1G2Lpm2BaH7iMYpQWERWvjKjH0eO/FIbwoRSQIWqxVXf7N16z80XRn8VWMNRXaMHy0Hxeclwny3p1ZudSXxR+Okz046Ga5kz/AUtKPAzdqvt6T8pJBexsf1GJLdMQwHeWQtjPlHVGJv1V+TfO2uJ6uqcfQWEfwQLfmZ4rwcuodjf+yJhwHbWzHa+gnXsOxPYCb66HqT75o8T+CNQuOyCBeqZMxHe/2GZRrOnMdRyEfco+QDkc4S4ru+Zjdl9qQQHzQuJydGE6lAManD3vVOG14o6UNpPcKCkuEpywwobCFX6elr7bmYhf+ax+kP+LpSVMJqb3pGlIcHufBSuddvj4RmgIAd9Fx25fl5/m38YwzB8NmBJfvle4RVQY="
