@@ -13,6 +13,8 @@ import Char
 type alias Position = { x : Int, y : Int }
 type Direction = Left | Right | Up | Down | None
 
+type alias Apple = { seed: Random.Seed, position: Maybe Position }
+
 type alias Snake =
   { position : Position
   , previousPositions : List Position
@@ -23,6 +25,7 @@ type alias Snake =
 type alias State =
   { running : Bool
   , snake : Snake
+  , apple : Apple
   }
 
 speedFactor = 1
@@ -34,10 +37,14 @@ blockSize = round (canvasSize / mapSize)
 
 initialState =
   { running = False
+  , apple =
+    { seed = Random.initialSeed 123
+    , position = Nothing
+    }
   , snake =
     { position =
-      { x = 0
-      , y = 0
+      { x = round (mapSize / 2)
+      , y = round (mapSize / 2)
       }
     , previousPositions = []
     , points = 0
@@ -46,12 +53,19 @@ initialState =
   }
 
 view : State -> Html
-view ({running, snake} as state) =
+view ({running, snake, apple} as state) =
   let
-    tail = map (\position -> div [tailStyle position] []) snake.previousPositions
+    wormHead = div [snakeStyle snake] []
+    wormBody = map (\position -> div [tailStyle position] []) snake.previousPositions
+    wormNode = wormHead :: wormBody
+
+    appleNode = case apple.position of
+      Just position -> div [appleStyle position] []
+      _ -> div [] []
+
   in
     div [containerStyle]
-      (div [snakeStyle snake] [] :: tail)
+      (appleNode :: wormNode)
 
 toPixels : a -> String
 toPixels value =
@@ -74,6 +88,15 @@ tailStyle position = style [ ("width", toPixels blockSize)
                            , ("background", "blue")
                            ]
 
+appleStyle : Position -> Attribute
+appleStyle position = style [ ("width", toPixels blockSize)
+                           , ("height", toPixels blockSize)
+                           , ("position", "absolute")
+                           , ("top", toPixels (blockSize * position.y))
+                           , ("left", toPixels (blockSize * position.x))
+                           , ("background", "blue")
+                           ]
+
 containerStyle : Attribute
 containerStyle = style [ ("width", toPixels canvasSize)
                        , ("height", toPixels canvasSize)
@@ -86,7 +109,7 @@ main =
 gameState : Signal.Signal State
 gameState =
   Signal.foldp stepGame initialState input
-
+  |> Signal.map (log "foo")
 
 cap : Int -> Int
 cap num =
@@ -103,8 +126,8 @@ capPosition {x, y} =
   , y = cap y
   }
 
-stepSnake : Input -> Snake -> Snake
-stepSnake ({direction} as input) ({position, previousPositions} as snake) =
+stepSnake : Input -> Snake -> Apple -> Snake
+stepSnake ({direction} as input) ({position, previousPositions, points} as snake) apple =
   let
     newDirection = if direction == None then snake.direction else direction
     newPosition =
@@ -119,23 +142,52 @@ stepSnake ({direction} as input) ({position, previousPositions} as snake) =
     }
     cappedPosition = capPosition newPosition
     previousPositions = snake.position :: snake.previousPositions
-    slicedPreviousPositions = drop (length previousPositions - snake.points) previousPositions
+    slicedPreviousPositions = take snake.points previousPositions
+    newPoints = if snakeTouchesApple snake apple then points + 1 else points
   in
     { position = cappedPosition
     , previousPositions = slicedPreviousPositions
-    , points = snake.points
+    , points = newPoints
     , direction = newDirection
     }
 
 
+
+newApple : Apple -> Apple
+newApple apple =
+  let
+    (xPosition, seed') = Random.generate (Random.int 0 (mapSize - 1)) apple.seed
+    (yPosition, seed'') = Random.generate (Random.int 0 (mapSize - 1)) seed'
+  in
+    { seed = seed''
+    , position = Just { x = xPosition
+                      , y = yPosition
+                      }
+    }
+
+snakeTouchesApple : Snake -> Apple -> Bool
+snakeTouchesApple snake apple =
+  apple.position == Just snake.position
+
+stepApple : Apple -> Snake -> Apple
+stepApple apple snake =
+  if snakeTouchesApple snake apple then
+    newApple apple
+  else
+    apple
+
 stepGame : Input -> State -> State
-stepGame ({direction, delta} as input) ({running, snake} as state) =
+stepGame ({direction, delta} as input) ({running, snake, apple} as state) =
   let
     running = state.running || direction /= None
+    justStarted = not state.running && running
+    updatedApple = if justStarted then newApple apple else stepApple apple snake
+    updatedSnake = stepSnake input snake apple
   in
     { state |
         running = running,
-        snake = stepSnake input snake }
+        apple = updatedApple,
+        snake = updatedSnake }
 
 
 delta : Signal.Signal Float
@@ -165,4 +217,4 @@ arrowKeys = Signal.map (Set.toList >> currentDirection) Keyboard.keysDown
 
 input : Signal.Signal Input
 input = Signal.sampleOn delta (Signal.map2 Input arrowKeys delta)
-  |> Signal.map (log "foo")
+
