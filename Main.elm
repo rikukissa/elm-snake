@@ -1,7 +1,6 @@
 import Html exposing (..)
 import Html.Attributes as Attr exposing (..)
 import Html.Events exposing (..)
-import Debug exposing (..)
 import Keyboard
 import Time
 import Random
@@ -106,7 +105,6 @@ main =
 gameState : Signal.Signal State
 gameState =
   Signal.foldp stepGame initialState input
-  |> Signal.map (log "foo")
 
 cap : Int -> Int
 cap num =
