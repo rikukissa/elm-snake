@@ -3,7 +3,7 @@ set -e # exit with nonzero exit code if anything fails
 
 npm install elm
 
-./node_modules/.bin/elm-make Main.elm --output index.html
+./node_modules/.bin/elm-make Main.elm --output index.html --yes
 
 # inside this git repo we'll pretend to be a new user
 git config user.name "Travis CI"
