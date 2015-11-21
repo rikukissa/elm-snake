@@ -166,6 +166,10 @@ snakeTouchesApple : Snake -> Apple -> Bool
 snakeTouchesApple snake apple =
   apple.position == Just snake.position
 
+snakeTouchesItself : Snake -> Bool
+snakeTouchesItself snake =
+  List.any (\position -> position == snake.position) snake.previousPositions
+
 stepApple : Apple -> Snake -> Apple
 stepApple apple snake =
   if snakeTouchesApple snake apple then
@@ -178,13 +182,18 @@ stepGame ({direction, delta} as input) ({running, snake, apple} as state) =
   let
     running = state.running || direction /= None
     justStarted = not state.running && running
+    gameOver = snakeTouchesItself snake
+
     updatedApple = if justStarted then newApple apple else stepApple apple snake
     updatedSnake = stepSnake input snake apple
   in
-    { state |
-        running = running,
-        apple = updatedApple,
-        snake = updatedSnake }
+    if gameOver then
+      initialState
+    else
+      { state |
+          running = running,
+          apple = updatedApple,
+          snake = updatedSnake }
 
 
 delta : Signal.Signal Float
