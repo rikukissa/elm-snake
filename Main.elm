@@ -55,12 +55,12 @@ initialState =
 view : State -> Html
 view ({running, snake, apple} as state) =
   let
-    wormHead = div [snakeStyle snake] []
-    wormBody = map (\position -> div [tailStyle position] []) snake.previousPositions
+    wormHead = div [snakeStyle snake.position] [text "🐤"]
+    wormBody = map (\position -> div [snakeStyle position] [text "😛"]) snake.previousPositions
     wormNode = wormHead :: wormBody
 
     appleNode = case apple.position of
-      Just position -> div [appleStyle position] []
+      Just position -> div [appleStyle position] [text "🍔"]
       _ -> div [] []
 
   in
@@ -71,31 +71,28 @@ toPixels : a -> String
 toPixels value =
   toString value ++ "px"
 
-snakeStyle : Snake -> Attribute
-snakeStyle snake = style [ ("width", toPixels blockSize)
-                         , ("height", toPixels blockSize)
-                         , ("position", "absolute")
-                         , ("top", toPixels (blockSize * snake.position.y))
-                         , ("left", toPixels (blockSize * snake.position.x))
-                         , ("background", "red")]
+blockStyle : List (String, String)
+blockStyle = [ ("width", toPixels blockSize)
+             , ("height", toPixels blockSize)
+             , ("position", "absolute")]
 
-tailStyle : Position -> Attribute
-tailStyle position = style [ ("width", toPixels blockSize)
-                           , ("height", toPixels blockSize)
-                           , ("position", "absolute")
-                           , ("top", toPixels (blockSize * position.y))
-                           , ("left", toPixels (blockSize * position.x))
-                           , ("background", "blue")
-                           ]
+snakeStyle : Position -> Attribute
+snakeStyle position = style
+  (List.concat [ blockStyle,
+    [ ("top", toPixels (blockSize * position.y))
+    , ("left", toPixels (blockSize * position.x))
+    , ("font-size", toPixels blockSize)
+    ]
+  ])
 
 appleStyle : Position -> Attribute
-appleStyle position = style [ ("width", toPixels blockSize)
-                           , ("height", toPixels blockSize)
-                           , ("position", "absolute")
-                           , ("top", toPixels (blockSize * position.y))
-                           , ("left", toPixels (blockSize * position.x))
-                           , ("background", "blue")
-                           ]
+appleStyle position = style
+  (List.concat [ blockStyle,
+    [ ("top", toPixels (blockSize * position.y))
+    , ("left", toPixels (blockSize * position.x))
+    , ("font-size", toPixels blockSize)
+    ]
+  ])
 
 containerStyle : Attribute
 containerStyle = style [ ("width", toPixels canvasSize)
