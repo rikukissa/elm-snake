@@ -164,7 +164,8 @@ newApple apple =
 
 snakeTouchesApple : Snake -> Apple -> Bool
 snakeTouchesApple snake apple =
-  apple.position == Just snake.position
+  apple.position == Just snake.position ||
+    List.any (\position -> apple.position == Just position) snake.previousPositions
 
 snakeTouchesItself : Snake -> Bool
 snakeTouchesItself snake =
