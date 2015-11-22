@@ -15,7 +15,7 @@ type alias Tick = Int
 type alias Emoji = String
 type Direction = Left | Right | Up | Down | None
 
-type alias Apple = { seed: Random.Seed, position: Maybe Position }
+type alias Apple = { seed: Random.Seed, position: Maybe Position, bonus: Bool }
 
 type alias Snake =
   { position : Position
@@ -44,6 +44,7 @@ initialState =
   , apple =
     { seed = Random.initialSeed 123
     , position = Nothing
+    , bonus = False
     }
   , snake =
     { position =
@@ -90,10 +91,10 @@ view ({running, snake, apple, tick, overlays} as state) (width, height) =
     snakeNode = snakeHead :: snakeBody
 
     appleNode = case apple.position of
-      Just position -> div [blockStyle (scale position)] [text "🍔"]
+      Just position -> div [blockStyle (scale position)] [text (if apple.bonus then "💎" else "🍔")]
       _ -> div [] []
 
-    pointsNode = div [] [text (toString snake.points)]
+    pointsNode = div [class "points"] [text (toString snake.points)]
 
     overlayNodes = List.map (\(_, emoji) -> div [class "overlay"] [text emoji]) overlays
     overlayNode = div [] overlayNodes
@@ -167,8 +168,10 @@ stepSnake ({direction, tick} as input) ({position, previousPositions, points} as
     cappedPosition = capPosition newPosition
     previousPositions = snake.position :: snake.previousPositions
     slicedPreviousPositions = take snake.points previousPositions
+
     gotPoint = snakeTouchesApple snake apple
-    newPoints = if gotPoint then points + 1 else points
+    applePoints = if apple.bonus then 10 else 1
+    newPoints = if gotPoint then points + applePoints else points
   in
     { position = cappedPosition
     , previousPositions = slicedPreviousPositions
@@ -182,10 +185,12 @@ stepSnake ({direction, tick} as input) ({position, previousPositions, points} as
 newApple : Apple -> Apple
 newApple apple =
   let
-    (xPosition, seed') = Random.generate (Random.int 0 (mapSize - 1)) apple.seed
+    (bonusProbability, seed) = Random.generate (Random.float 0 1) apple.seed
+    (xPosition, seed') = Random.generate (Random.int 0 (mapSize - 1)) seed
     (yPosition, seed'') = Random.generate (Random.int 0 (mapSize - 1)) seed'
   in
     { seed = seed''
+    , bonus = bonusProbability > 0.9
     , position = Just { x = xPosition
                       , y = yPosition
                       }
