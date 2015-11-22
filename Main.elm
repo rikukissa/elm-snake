@@ -232,7 +232,7 @@ stepGame ({direction, tick} as input) ({running, snake, apple, overlays} as stat
       initialState
     else
       { state |
-          running = running,
+          running = if gameOver then False else running,
           apple = updatedApple,
           snake = updatedSnake,
           overlays = updatedOverlays,
