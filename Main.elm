@@ -62,7 +62,9 @@ getOverlay : Int -> Maybe String
 getOverlay points =
   if points == 1 then
     Just "👌"
-  else if points == 3 then
+  else if points == 2 then
+    Just "🙌"
+  else if points == 5 then
     Just "👍"
   else if points == 10 then
     Just "😍"
