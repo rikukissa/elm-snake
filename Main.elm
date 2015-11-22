@@ -99,7 +99,7 @@ view ({running, snake, apple, tick} as state) (width, height) =
 
 
   in
-    div [containerStyle canvasSize blockSize]
+    div [class "container", containerStyle canvasSize blockSize]
       [ node "link" [rel "stylesheet", href "style.css"] []
       , div []
          (appleNode :: snakeNode)
@@ -123,10 +123,8 @@ toBlockStyle blockSize position =
 containerStyle : Int -> Int -> Attribute
 containerStyle canvasSize blockSize = style [ ("width", toPixels canvasSize)
                                             , ("height", toPixels canvasSize)
-                                            , ("margin", "auto")
-                                            , ("position", "relative")
                                             , ("font-size", toPixels blockSize)
-                                            , ("background", "#F9F9F9")]
+                                            ]
 
 main =
   Signal.map2 view gameState Window.dimensions
