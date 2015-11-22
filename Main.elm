@@ -274,12 +274,23 @@ toDirection keyCode =
 
 currentDirection : (List Char.KeyCode) -> Direction
 currentDirection keys =
-  case keys of
+  case reverse keys of
     [xs] -> toDirection xs
+    hd::tl -> toDirection hd
     [] -> None
-    _ -> None
 
-arrowKeys = Signal.map (Set.toList >> currentDirection) Keyboard.keysDown
+sortByRecentness : (List Char.KeyCode) -> (List Char.KeyCode) -> (List Char.KeyCode)
+sortByRecentness newKeys oldKeys =
+  List.filter (\code -> (not << (flip member) oldKeys) code) newKeys
+  |> List.append (List.filter (\code -> member code newKeys) oldKeys)
+
+keysDown' : Signal (List Char.KeyCode)
+keysDown' = Keyboard.keysDown
+  |> Signal.map Set.toList
+  |> Signal.foldp sortByRecentness []
+
+arrowKeys : Signal Direction
+arrowKeys = Signal.map currentDirection keysDown'
 
 input : Signal.Signal Input
 input = Signal.sampleOn tick (Signal.map2 Input arrowKeys tick)
