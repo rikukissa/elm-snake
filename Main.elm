@@ -29,8 +29,8 @@ type alias State =
   { running : Bool
   , snake : Snake
   , apple : Apple
-  , tick : Tick
   , overlays : List (Tick, Emoji)
+  , gameEndedAt : Tick
   }
 
 speedFactor = 1
@@ -39,7 +39,7 @@ mapSize = 20
 
 initialState =
   { running = False
-  , tick = 0
+  , gameEndedAt = 0
   , overlays = []
   , apple =
     { seed = Random.initialSeed 123
@@ -70,13 +70,17 @@ getOverlay points =
     Just "💪"
   else if points == 50 then
     Just "👏"
-  else if points == 100 then
+  else if points == 75 then
     Just "🎉"
+  else if points == 100 then
+    Just "💎"
+  else if points == 150 then
+    Just "🌟"
   else
     Nothing
 
 view : State -> (Int, Int) -> Html
-view ({running, snake, apple, tick, overlays} as state) (width, height) =
+view ({running, snake, apple, overlays} as state) (width, height) =
   let
     canvasSize = Basics.min width height
     blockSize = round ((toFloat canvasSize) / mapSize)
@@ -213,7 +217,7 @@ stepApple apple snake =
     apple
 
 stepGame : Input -> State -> State
-stepGame ({direction, tick} as input) ({running, snake, apple, overlays} as state) =
+stepGame ({direction, tick} as input) ({running, snake, apple, overlays, gameEndedAt} as state) =
   let
     running = state.running || direction /= None
     justStarted = not state.running && running
@@ -221,27 +225,32 @@ stepGame ({direction, tick} as input) ({running, snake, apple, overlays} as stat
     updatedApple = if justStarted then newApple apple else stepApple apple snake
     updatedSnake = stepSnake input snake apple
 
+    gameHasEnded = gameEndedAt /= 0
+    gameEnded = gameHasEnded || snakeTouchesItself updatedSnake
+    updatedGameEndedAt = if gameEnded && (not gameHasEnded) then tick else gameEndedAt
+
     newOverlays = if updatedSnake.lastPointAt > snake.lastPointAt then
       case getOverlay updatedSnake.points of
         Just emoji -> (tick, emoji) :: overlays
         Nothing -> overlays
+    else if gameEnded then
+      (tick, "👷") :: overlays
     else
       overlays
 
     updatedOverlays = List.filter (\(createdAt, _) -> tick - createdAt < 60) newOverlays
-
-    gameOver = snakeTouchesItself updatedSnake
-
   in
-    if gameOver then
+    if gameHasEnded && tick - updatedGameEndedAt > 60 then
       initialState
+    else if gameHasEnded then
+      state
     else
       { state |
-          running = if gameOver then False else running,
+          running = if gameEnded then False else running,
           apple = updatedApple,
           snake = updatedSnake,
           overlays = updatedOverlays,
-          tick = tick }
+          gameEndedAt = updatedGameEndedAt }
 
 
 tick : Signal.Signal Tick
