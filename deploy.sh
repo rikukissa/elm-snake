@@ -1,9 +1,18 @@
 #!/bin/bash
 set -e # exit with nonzero exit code if anything fails
 
-npm install elm
 
+# clear and re-create the out directory
+rm -rf out || exit 0;
+mkdir out;
+
+npm install elm
 ./node_modules/.bin/elm-make Main.elm --output index.html --yes
+
+cp index.html style.css out/
+
+cd out
+git init
 
 # inside this git repo we'll pretend to be a new user
 git config user.name "Travis CI"
