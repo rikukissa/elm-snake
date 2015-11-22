@@ -1,0 +1,36 @@
+@keyframes foobar {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.overlay {
+  animation: 2s foobar;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  font-size: 4em;
+}
+
+.container {
+  margin: auto;
+  position: relative;
+  background: #F9F9F9;
+  overflow: hidden;
+}
+
+.points {
+  padding: 1em;
+  color: #84B9F3;
+  font-size: 3em;
+  text-align: center;
+  font-family: 'Helvetica Neue', Helvetica, Arial;
+}
