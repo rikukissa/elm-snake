@@ -34,7 +34,7 @@ type alias State =
   }
 
 speedFactor = 1
-framesPerSecond = 20
+framesPerSecond = 15
 mapSize = 20
 
 initialState =
@@ -240,9 +240,9 @@ stepGame ({direction, tick} as input) ({running, snake, apple, overlays, gameEnd
     else
       overlays
 
-    updatedOverlays = List.filter (\(createdAt, _) -> tick - createdAt < 60) newOverlays
+    updatedOverlays = List.filter (\(createdAt, _) -> tick - createdAt < (framesPerSecond * 3)) newOverlays
   in
-    if gameHasEnded && tick - updatedGameEndedAt > 60 then
+    if gameHasEnded && tick - updatedGameEndedAt > (framesPerSecond * 3) then
       initialState
     else if gameHasEnded then
       state
