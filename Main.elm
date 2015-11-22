@@ -12,6 +12,7 @@ import Char
 
 type alias Position = { x : Int, y : Int }
 type alias Tick = Int
+type alias Emoji = String
 type Direction = Left | Right | Up | Down | None
 
 type alias Apple = { seed: Random.Seed, position: Maybe Position }
@@ -29,15 +30,17 @@ type alias State =
   , snake : Snake
   , apple : Apple
   , tick : Tick
+  , overlays : List (Tick, Emoji)
   }
 
 speedFactor = 1
-framesPerSecond = 10
+framesPerSecond = 20
 mapSize = 20
 
 initialState =
   { running = False
   , tick = 0
+  , overlays = []
   , apple =
     { seed = Random.initialSeed 123
     , position = Nothing
@@ -54,25 +57,25 @@ initialState =
     }
   }
 
-getCompliment : Int -> String
-getCompliment points =
+getOverlay : Int -> Maybe String
+getOverlay points =
   if points == 1 then
-    "👌"
+    Just "👌"
   else if points == 3 then
-    "👍"
+    Just "👍"
   else if points == 10 then
-    "😍"
+    Just "😍"
   else if points == 20 then
-    "💪"
+    Just "💪"
   else if points == 50 then
-    "👏"
+    Just "👏"
   else if points == 100 then
-    "🎉"
+    Just "🎉"
   else
-    ""
+    Nothing
 
 view : State -> (Int, Int) -> Html
-view ({running, snake, apple, tick} as state) (width, height) =
+view ({running, snake, apple, tick, overlays} as state) (width, height) =
   let
     canvasSize = Basics.min width height
     blockSize = round ((toFloat canvasSize) / mapSize)
@@ -91,10 +94,9 @@ view ({running, snake, apple, tick} as state) (width, height) =
       _ -> div [] []
 
     pointsNode = div [] [text (toString snake.points)]
-    overlayNode = if tick - snake.lastPointAt < 20 && snake.points > 0 then
-      div [class "overlay"] [text (getCompliment snake.points)]
-    else
-      div [] []
+
+    overlayNodes = List.map (\(_, emoji) -> div [class "overlay"] [text emoji]) overlays
+    overlayNode = div [] overlayNodes
 
 
 
@@ -153,15 +155,15 @@ stepSnake ({direction, tick} as input) ({position, previousPositions, points} as
   let
     newDirection = if direction == None then snake.direction else direction
     newPosition =
-    { x = case snake.direction of
-                Left -> position.x - 1
-                Right -> position.x + 1
-                _ -> position.x
-    , y = case snake.direction of
-                Up -> position.y - 1
-                Down -> position.y + 1
-                _ -> position.y
-    }
+      { x = case snake.direction of
+                  Left -> position.x - 1
+                  Right -> position.x + 1
+                  _ -> position.x
+      , y = case snake.direction of
+                  Up -> position.y - 1
+                  Down -> position.y + 1
+                  _ -> position.y
+      }
     cappedPosition = capPosition newPosition
     previousPositions = snake.position :: snake.previousPositions
     slicedPreviousPositions = take snake.points previousPositions
@@ -206,15 +208,24 @@ stepApple apple snake =
     apple
 
 stepGame : Input -> State -> State
-stepGame ({direction, tick} as input) ({running, snake, apple} as state) =
+stepGame ({direction, tick} as input) ({running, snake, apple, overlays} as state) =
   let
     running = state.running || direction /= None
     justStarted = not state.running && running
-    gameOver = snakeTouchesItself snake
 
     updatedApple = if justStarted then newApple apple else stepApple apple snake
     updatedSnake = stepSnake input snake apple
 
+    newOverlays = if updatedSnake.lastPointAt > snake.lastPointAt then
+      case getOverlay updatedSnake.points of
+        Just emoji -> (tick, emoji) :: overlays
+        Nothing -> overlays
+    else
+      overlays
+
+    updatedOverlays = List.filter (\(createdAt, _) -> tick - createdAt < 60) newOverlays
+
+    gameOver = snakeTouchesItself updatedSnake
 
   in
     if gameOver then
@@ -224,6 +235,7 @@ stepGame ({direction, tick} as input) ({running, snake, apple} as state) =
           running = running,
           apple = updatedApple,
           snake = updatedSnake,
+          overlays = updatedOverlays,
           tick = tick }
 
 
