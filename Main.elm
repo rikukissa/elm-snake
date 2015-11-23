@@ -4,6 +4,7 @@ import Html.Events exposing (..)
 import Keyboard
 import Window
 import Time
+import Array exposing (Array, fromList, toList)
 import Random
 import Signal
 import Set
@@ -29,7 +30,7 @@ type alias State =
   { running : Bool
   , snake : Snake
   , apple : Apple
-  , overlays : List (Tick, Emoji)
+  , overlays : Array (Tick, Emoji)
   , gameEndedAt : Tick
   }
 
@@ -40,7 +41,7 @@ mapSize = 20
 initialState =
   { running = False
   , gameEndedAt = 0
-  , overlays = []
+  , overlays = fromList []
   , apple =
     { seed = Random.initialSeed 123
     , position = Nothing
@@ -102,10 +103,9 @@ view ({running, snake, apple, overlays} as state) (width, height) =
 
     pointsNode = div [class "points"] [text (toString snake.points)]
 
-    overlayNodes = List.map (\(_, emoji) -> div [class "overlay"] [text emoji]) overlays
-    overlayNode = div [] overlayNodes
-
-
+    overlayNode = toList overlays
+      |> List.map (\(_, emoji) -> div [class "overlay"] [text emoji])
+      |> div []
 
   in
     div [class "container", containerStyle canvasSize blockSize]
@@ -233,14 +233,14 @@ stepGame ({direction, tick} as input) ({running, snake, apple, overlays, gameEnd
 
     newOverlays = if updatedSnake.lastPointAt > snake.lastPointAt then
       case getOverlay updatedSnake.points of
-        Just emoji -> (tick, emoji) :: overlays
+        Just emoji -> Array.push (tick, emoji) overlays
         Nothing -> overlays
     else if gameEnded then
-      (tick, "👷") :: overlays
+      Array.push (tick, "👷") overlays
     else
       overlays
 
-    updatedOverlays = List.filter (\(createdAt, _) -> tick - createdAt < (framesPerSecond * 3)) newOverlays
+    updatedOverlays = Array.filter (\(createdAt, _) -> tick - createdAt < (framesPerSecond * 3)) newOverlays
   in
     if gameHasEnded && tick - updatedGameEndedAt > (framesPerSecond * 3) then
       initialState
@@ -257,7 +257,6 @@ stepGame ({direction, tick} as input) ({running, snake, apple, overlays, gameEnd
 
 tick : Signal.Signal Tick
 tick = Time.fps framesPerSecond
-        |> Signal.map Time.inSeconds
         |> Signal.map (always 1)
         |> Signal.foldp (+) 0
 
