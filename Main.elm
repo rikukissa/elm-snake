@@ -157,10 +157,21 @@ capPosition {x, y} =
   , y = cap y
   }
 
+
+updateDirection : Direction -> Direction -> Direction
+updateDirection old new =
+  if new == None ||
+    (old == Up && new == Down) ||
+    (old == Down && new == Up) ||
+    (old == Left && new == Right) ||
+    (old == Right && new == Left) then
+    old
+  else new
+
 stepSnake : Input -> Snake -> Apple -> Snake
 stepSnake ({direction, tick} as input) ({position, previousPositions, points} as snake) apple =
   let
-    newDirection = if direction == None then snake.direction else direction
+    newDirection = updateDirection snake.direction direction
     newPosition =
       { x = case snake.direction of
                   Left -> position.x - 1
