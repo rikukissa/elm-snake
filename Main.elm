@@ -93,7 +93,7 @@ view ({running, snake, apple, overlays} as state) (width, height) =
       , y = position.y * blockSize
       }
 
-    snakeHead = div [blockStyle (scale snake.position)] [text "🐤"]
+    snakeHead = div [class "head", blockStyle (scale snake.position)] [text "🐤"]
     snakeBody = map (\position -> div [blockStyle (scale position)] [text "😛"]) snake.previousPositions
     snakeNode = snakeHead :: snakeBody
 

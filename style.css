@@ -34,3 +34,7 @@
   text-align: center;
   font-family: 'Helvetica Neue', Helvetica, Arial;
 }
+
+.head {
+  z-index: 1;
+}
