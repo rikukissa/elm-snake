@@ -11,12 +11,31 @@ import Set
 import List exposing (..)
 import Char
 
-type alias Position = { x : Int, y : Int }
-type alias Tick = Int
-type alias Emoji = String
-type Direction = Left | Right | Up | Down | None
+type alias Position =
+  { x : Int
+  , y : Int
+  }
 
-type alias Apple = { seed: Random.Seed, position: Maybe Position, bonus: Bool }
+type alias Tick =
+  Int
+
+type alias Emoji =
+  String
+
+type Direction
+  = Left
+  | Right
+  | Up
+  | Down
+  | None
+
+type alias Input = { direction : Direction , tick : Tick }
+
+type alias Apple =
+  { seed: Random.Seed
+  , position: Maybe Position
+  , bonus: Bool
+  }
 
 type alias Snake =
   { position : Position
@@ -34,9 +53,11 @@ type alias State =
   , gameEndedAt : Tick
   }
 
-speedFactor = 1
-framesPerSecond = 15
-mapSize = 20
+framesPerSecond =
+  15
+
+mapSize =
+  20
 
 initialState =
   { running = False
@@ -267,11 +288,10 @@ stepGame ({direction, tick} as input) ({running, snake, apple, overlays, gameEnd
 
 
 tick : Signal.Signal Tick
-tick = Time.fps framesPerSecond
-        |> Signal.map (always 1)
-        |> Signal.foldp (+) 0
-
-type alias Input = { direction : Direction , tick : Tick }
+tick =
+  Time.fps framesPerSecond
+  |> Signal.map (always 1)
+  |> Signal.foldp (+) 0
 
 toDirection : Char.KeyCode -> Direction
 toDirection keyCode =
@@ -295,13 +315,16 @@ sortByRecentness newKeys oldKeys =
   |> List.append (List.filter (\code -> member code newKeys) oldKeys)
 
 keysDown' : Signal (List Char.KeyCode)
-keysDown' = Keyboard.keysDown
+keysDown' =
+  Keyboard.keysDown
   |> Signal.map Set.toList
   |> Signal.foldp sortByRecentness []
 
 arrowKeys : Signal Direction
-arrowKeys = Signal.map currentDirection keysDown'
+arrowKeys =
+  Signal.map currentDirection keysDown'
 
 input : Signal.Signal Input
-input = Signal.sampleOn tick (Signal.map2 Input arrowKeys tick)
+input =
+  Signal.sampleOn tick (Signal.map2 Input arrowKeys tick)
 
