@@ -3,9 +3,9 @@ import Html.Attributes as Attr exposing (..)
 import Html.Events exposing (..)
 import Keyboard
 import Window
-import Time
+import Time exposing (second)
 import Array exposing (Array, fromList, toList)
-import Random
+import Random exposing (Seed)
 import Signal
 import Set
 import List exposing (..)
@@ -29,11 +29,14 @@ type Direction
   | Down
   | None
 
-type alias Input = { direction : Direction , tick : Tick }
+type alias Input =
+  { direction : Direction
+  , tick : Tick
+  , seed: Seed
+  }
 
 type alias Apple =
-  { seed: Random.Seed
-  , position: Maybe Position
+  { position: Maybe Position
   , bonus: Bool
   }
 
@@ -64,8 +67,7 @@ initialState =
   , gameEndedAt = 0
   , overlays = fromList []
   , apple =
-    { seed = Random.initialSeed 123
-    , position = Nothing
+    { position = Nothing
     , bonus = False
     }
   , snake =
@@ -220,15 +222,14 @@ stepSnake ({direction, tick} as input) ({position, previousPositions, points} as
 
 
 
-newApple : Apple -> Apple
-newApple apple =
+newApple : Apple -> Seed -> Apple
+newApple apple seed =
   let
-    (bonusProbability, seed) = Random.generate (Random.float 0 1) apple.seed
-    (xPosition, seed') = Random.generate (Random.int 0 (mapSize - 1)) seed
-    (yPosition, seed'') = Random.generate (Random.int 0 (mapSize - 1)) seed'
+    (bonusProbability, seed') = Random.generate (Random.float 0 1) seed
+    (xPosition, seed'') = Random.generate (Random.int 0 (mapSize - 1)) seed'
+    (yPosition, _) = Random.generate (Random.int 0 (mapSize - 1)) seed''
   in
-    { seed = seed''
-    , bonus = bonusProbability > 0.9
+    { bonus = bonusProbability > 0.9
     , position = Just { x = xPosition
                       , y = yPosition
                       }
@@ -243,20 +244,20 @@ snakeTouchesItself : Snake -> Bool
 snakeTouchesItself snake =
   List.any (\position -> position == snake.position) snake.previousPositions
 
-stepApple : Apple -> Snake -> Apple
-stepApple apple snake =
+stepApple : Apple -> Snake -> Input -> Apple
+stepApple apple snake input =
   if snakeTouchesApple snake apple then
-    newApple apple
+    newApple apple input.seed
   else
     apple
 
 stepGame : Input -> State -> State
-stepGame ({direction, tick} as input) ({running, snake, apple, overlays, gameEndedAt} as state) =
+stepGame ({direction, tick, seed} as input) ({running, snake, apple, overlays, gameEndedAt} as state) =
   let
     running = state.running || direction /= None
     justStarted = not state.running && running
 
-    updatedApple = if justStarted then newApple apple else stepApple apple snake
+    updatedApple = if justStarted then newApple apple seed else stepApple apple snake input
     updatedSnake = stepSnake input snake apple
 
     gameHasEnded = gameEndedAt /= 0
@@ -320,11 +321,17 @@ keysDown' =
   |> Signal.map Set.toList
   |> Signal.foldp sortByRecentness []
 
+timeSeed : Signal Seed
+timeSeed =
+  Time.every second
+  |> Signal.map round
+  |> Signal.map Random.initialSeed
+
 arrowKeys : Signal Direction
 arrowKeys =
   Signal.map currentDirection keysDown'
 
 input : Signal.Signal Input
 input =
-  Signal.sampleOn tick (Signal.map2 Input arrowKeys tick)
+  Signal.sampleOn tick (Signal.map3 Input arrowKeys tick timeSeed)
 
