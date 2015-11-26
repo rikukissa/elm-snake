@@ -222,23 +222,33 @@ stepSnake ({direction, tick} as input) ({position, previousPositions, points} as
 
 
 
-newApple : Apple -> Seed -> Apple
-newApple apple seed =
+newApple : Apple -> Snake -> Seed -> Apple
+newApple apple snake seed =
   let
     (bonusProbability, seed') = Random.generate (Random.float 0 1) seed
     (xPosition, seed'') = Random.generate (Random.int 0 (mapSize - 1)) seed'
-    (yPosition, _) = Random.generate (Random.int 0 (mapSize - 1)) seed''
+    (yPosition, seed''') = Random.generate (Random.int 0 (mapSize - 1)) seed''
+    newPosition = { x = xPosition
+                  , y = yPosition
+                  }
   in
-    { bonus = bonusProbability > 0.9
-    , position = Just { x = xPosition
-                      , y = yPosition
-                      }
-    }
+    if touchesSnake snake newPosition then
+      -- Get new position
+      newApple apple snake seed'''
+    else
+      { bonus = bonusProbability > 0.9
+      , position = Just newPosition
+      }
+
+touchesSnake : Snake -> Position -> Bool
+touchesSnake snake position =
+  any (\p -> p == position) (snake.position :: snake.previousPositions)
 
 snakeTouchesApple : Snake -> Apple -> Bool
 snakeTouchesApple snake apple =
-  apple.position == Just snake.position ||
-    List.any (\position -> apple.position == Just position) snake.previousPositions
+  case apple.position of
+    Just position -> touchesSnake snake position
+    Nothing -> False
 
 snakeTouchesItself : Snake -> Bool
 snakeTouchesItself snake =
@@ -247,7 +257,7 @@ snakeTouchesItself snake =
 stepApple : Apple -> Snake -> Input -> Apple
 stepApple apple snake input =
   if snakeTouchesApple snake apple then
-    newApple apple input.seed
+    newApple apple snake input.seed
   else
     apple
 
@@ -257,7 +267,7 @@ stepGame ({direction, tick, seed} as input) ({running, snake, apple, overlays, g
     running = state.running || direction /= None
     justStarted = not state.running && running
 
-    updatedApple = if justStarted then newApple apple seed else stepApple apple snake input
+    updatedApple = if justStarted then newApple apple snake seed else stepApple apple snake input
     updatedSnake = stepSnake input snake apple
 
     gameHasEnded = gameEndedAt /= 0
