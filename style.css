@@ -9,7 +9,9 @@
     opacity: 0;
   }
 }
-
+#main {
+  height: 100%;
+}
 .overlay {
   animation: 2s foobar;
   position: absolute;

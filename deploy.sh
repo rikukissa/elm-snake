@@ -7,7 +7,7 @@ rm -rf out || exit 0;
 mkdir out;
 
 npm install elm
-./node_modules/.bin/elm-make Main.elm --output index.html --yes
+./node_modules/.bin/elm-make Main.elm --output elm.js --yes
 
 cp index.html style.css out/
 

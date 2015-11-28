@@ -1,3 +1,5 @@
+module Main (main) where
+
 import Html exposing (..)
 import Html.Attributes as Attr exposing (..)
 import Html.Events exposing (..)
@@ -124,7 +126,9 @@ view ({running, snake, apple, overlays} as state) (width, height) =
       Just position -> div [blockStyle (scale position)] [text (if apple.bonus then "💎" else "🍔")]
       _ -> div [] []
 
-    pointsNode = div [class "points"] [text (toString snake.points)]
+    pointsNode = div []
+      [ div [class "points"] [text (toString snake.points)]
+      ]
 
     overlayNode = toList overlays
       |> List.map (\(_, emoji) -> div [class "overlay"] [text emoji])
@@ -132,8 +136,7 @@ view ({running, snake, apple, overlays} as state) (width, height) =
 
   in
     div [class "container", containerStyle canvasSize blockSize]
-      [ node "link" [rel "stylesheet", href "style.css"] []
-      , div []
+      [ div [class "entities"]
          (appleNode :: snakeNode)
       , pointsNode
       , overlayNode
