@@ -29,14 +29,24 @@
   overflow: hidden;
 }
 
-.points {
-  padding: 1em;
+.highscore, .points {
   color: #84B9F3;
-  font-size: 3em;
   text-align: center;
   font-family: 'Helvetica Neue', Helvetica, Arial;
 }
 
-.head {
+.points {
+  padding: 1em 1em 0 1em;
+  font-size: 3em;
+}
+.highscore {
+  opacity: 0.5;
+}
+
+.head, .entities {
   z-index: 1;
+}
+
+.entities {
+  position: relative;
 }

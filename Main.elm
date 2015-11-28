@@ -5,10 +5,14 @@ import Html.Attributes as Attr exposing (..)
 import Html.Events exposing (..)
 import Keyboard
 import Window
+import Task exposing (Task)
+import LocalStorage
 import Time exposing (second)
 import Array exposing (Array, fromList, toList)
 import Random exposing (Seed)
 import Signal
+import String exposing (toInt)
+import Result
 import Set
 import List exposing (..)
 import Char
@@ -84,6 +88,43 @@ initialState =
     }
   }
 
+main =
+  Signal.map3 view gameState Window.dimensions highscore
+
+gameState : Signal.Signal State
+gameState =
+  Signal.foldp stepGame initialState input
+
+{- High Score handling -}
+currentPoints : Signal Int
+currentPoints =
+  Signal.map (\state -> state.snake.points) gameState
+  |> Signal.merge highscoreLoaded.signal
+
+highscore : Signal Int
+highscore =
+  Signal.foldp Basics.max 0 currentPoints
+
+highscoreLoaded : Signal.Mailbox Int
+highscoreLoaded = Signal.mailbox 0
+
+port saveHighscore : Signal (Task LocalStorage.Error String)
+port saveHighscore =
+  highscore
+  |> Signal.map toString
+  |> Signal.map (LocalStorage.set "highscore")
+
+port getHighscore : Task LocalStorage.Error ()
+port getHighscore =
+  let handle str =
+    case str of
+      Just s -> Result.withDefault 0 (String.toInt s)
+        |> Signal.send highscoreLoaded.address
+      Nothing -> Signal.send highscoreLoaded.address 0
+  in
+    (LocalStorage.get "highscore") `Task.andThen` handle
+
+
 getOverlay : Int -> Maybe String
 getOverlay points =
   if points == 1 then
@@ -107,8 +148,8 @@ getOverlay points =
   else
     Nothing
 
-view : State -> (Int, Int) -> Html
-view ({running, snake, apple, overlays} as state) (width, height) =
+view : State -> (Int, Int) -> Int -> Html
+view ({running, snake, apple, overlays} as state) (width, height) highscore =
   let
     canvasSize = Basics.min width height
     blockSize = round ((toFloat canvasSize) / mapSize)
@@ -128,6 +169,7 @@ view ({running, snake, apple, overlays} as state) (width, height) =
 
     pointsNode = div []
       [ div [class "points"] [text (toString snake.points)]
+      , div [class "highscore"] [text (toString highscore)]
       ]
 
     overlayNode = toList overlays
@@ -160,13 +202,6 @@ containerStyle canvasSize blockSize = style [ ("width", toPixels canvasSize)
                                             , ("height", toPixels canvasSize)
                                             , ("font-size", toPixels blockSize)
                                             ]
-
-main =
-  Signal.map2 view gameState Window.dimensions
-
-gameState : Signal.Signal State
-gameState =
-  Signal.foldp stepGame initialState input
 
 cap : Int -> Int
 cap num =
