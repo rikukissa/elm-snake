@@ -9,7 +9,8 @@ mkdir out;
 npm install elm
 ./node_modules/.bin/elm-make Main.elm --output elm.js --yes
 
-cp index.html style.css elm.js out/
+cp style.css elm.js out/
+cp index.html.prod out/index.html
 
 cd out
 git init
