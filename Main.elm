@@ -389,7 +389,7 @@ handleBuffer action (lastRemoved, buffer) =
       , Maybe.withDefault [] (tail buffer)
       )
 
-    Add k -> (lastRemoved, append buffer [k])
+    Add k -> (lastRemoved, take 5 (append buffer [k]))
 
 arrowKeys : Signal Direction
 arrowKeys =
