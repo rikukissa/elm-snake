@@ -6,7 +6,7 @@ set -e # exit with nonzero exit code if anything fails
 rm -rf out || exit 0;
 mkdir out;
 
-npm install elm
+npm install elm@0.16.0
 ./node_modules/.bin/elm-make Main.elm --output elm.js --yes
 
 cp style.css elm.js out/
