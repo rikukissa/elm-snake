@@ -351,23 +351,17 @@ toDirection keyCode =
     40 -> Down
     _ -> None
 
-currentDirection : (List Char.KeyCode) -> Direction
-currentDirection keys =
-  case reverse keys of
-    [xs] -> toDirection xs
-    hd::tl -> toDirection hd
-    [] -> None
+currentDirection : (Maybe Char.KeyCode) -> Direction
+currentDirection key =
+  case key of
+    Just k -> toDirection k
+    _ -> None
 
-sortByRecentness : (List Char.KeyCode) -> (List Char.KeyCode) -> (List Char.KeyCode)
-sortByRecentness newKeys oldKeys =
-  List.filter (\code -> (not << (flip member) oldKeys) code) newKeys
-  |> List.append (List.filter (\code -> member code newKeys) oldKeys)
-
-keysDown' : Signal (List Char.KeyCode)
+keysDown' : Signal (Maybe Char.KeyCode)
 keysDown' =
   Keyboard.keysDown
   |> Signal.map Set.toList
-  |> Signal.foldp sortByRecentness []
+  |> Signal.map head
 
 timeSeed : Signal Seed
 timeSeed =
@@ -375,11 +369,41 @@ timeSeed =
   |> Signal.map round
   |> Signal.map Random.initialSeed
 
+type Action
+  = Remove
+  | Add Direction
+
+last' : List Direction -> Direction
+last' buffer =
+  head (reverse buffer)
+  |> Maybe.withDefault None
+
+handleBuffer : Action -> (Direction, List Direction) -> (Direction, List Direction)
+handleBuffer action (lastRemoved, buffer) =
+  case action of
+    Remove ->
+      ( Maybe.withDefault None (head buffer)
+      , Maybe.withDefault [] (tail buffer)
+      )
+
+    Add k -> (lastRemoved, append buffer [k])
+
 arrowKeys : Signal Direction
 arrowKeys =
-  Signal.map currentDirection keysDown'
+  let
+    directions = Signal.map currentDirection keysDown'
+      |> Signal.filter (\direction -> direction /= None) None
+
+    merged = Signal.merge
+      (Signal.map (always Remove) tick)
+      (Signal.map Add directions)
+
+    buffer = Signal.foldp handleBuffer (None, []) merged
+      |> Signal.map fst
+  in
+    buffer
+
 
 input : Signal.Signal Input
 input =
   Signal.sampleOn tick (Signal.map3 Input arrowKeys tick timeSeed)
-
