@@ -2,7 +2,6 @@ module Main (main) where
 
 import Html exposing (..)
 import Html.Attributes as Attr exposing (..)
-import Html.Events exposing (..)
 import Keyboard
 import Window
 import Task exposing (Task)
@@ -62,12 +61,15 @@ type alias State =
   , gameEndedAt : Tick
   }
 
+framesPerSecond : Int
 framesPerSecond =
   15
 
+mapSize : Int
 mapSize =
   20
 
+initialState : State
 initialState =
   { running = False
   , gameEndedAt = 0
@@ -78,8 +80,8 @@ initialState =
     }
   , snake =
     { position =
-      { x = round (mapSize / 2)
-      , y = round (mapSize / 2)
+      { x = round (toFloat mapSize / 2)
+      , y = round (toFloat mapSize / 2)
       }
     , previousPositions = []
     , points = 0
@@ -88,6 +90,7 @@ initialState =
     }
   }
 
+main : Signal Html
 main =
   Signal.map3 view gameState Window.dimensions highscore
 
@@ -152,7 +155,7 @@ view : State -> (Int, Int) -> Int -> Html
 view ({running, snake, apple, overlays} as state) (width, height) highscore =
   let
     canvasSize = Basics.min width height
-    blockSize = round ((toFloat canvasSize) / mapSize)
+    blockSize = round ((toFloat canvasSize) / (toFloat mapSize))
     blockStyle = toBlockStyle blockSize
     scale position =
       { x = position.x * blockSize
