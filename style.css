@@ -19,7 +19,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   opacity: 0;
-  font-size: 4em;
+  font-size: 128px;
 }
 
 .container {
