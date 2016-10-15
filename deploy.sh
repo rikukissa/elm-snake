@@ -9,7 +9,7 @@ mkdir out;
 npm install elm@0.16.0
 ./node_modules/.bin/elm-make Main.elm --output elm.js --yes
 
-cp style.css elm.js out/
+cp style.css elm.js logo.png out/
 cp index.html.prod out/index.html
 
 cd out

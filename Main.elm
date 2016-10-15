@@ -55,6 +55,7 @@ type alias Snake =
 
 type alias State =
   { running : Bool
+  , logoVisible : Bool
   , snake : Snake
   , apple : Apple
   , overlays : Array (Tick, Emoji)
@@ -72,6 +73,7 @@ mapSize =
 initialState : State
 initialState =
   { running = False
+  , logoVisible = True
   , gameEndedAt = 0
   , overlays = fromList []
   , apple =
@@ -80,8 +82,8 @@ initialState =
     }
   , snake =
     { position =
-      { x = round (toFloat mapSize / 2)
-      , y = round (toFloat mapSize / 2)
+      { x = round (toFloat mapSize / 3)
+      , y = round (toFloat mapSize / 3)
       }
     , previousPositions = []
     , points = 0
@@ -152,7 +154,7 @@ getOverlay points =
     Nothing
 
 view : State -> (Int, Int) -> Int -> Html
-view ({running, snake, apple, overlays} as state) (width, height) highscore =
+view ({running, logoVisible, snake, apple, overlays} as state) (width, height) highscore =
   let
     canvasSize = Basics.min width height
     blockSize = round ((toFloat canvasSize) / (toFloat mapSize))
@@ -162,8 +164,8 @@ view ({running, snake, apple, overlays} as state) (width, height) highscore =
       , y = position.y * blockSize
       }
 
-    snakeHead = div [class "head", blockStyle (scale snake.position)] [text "🐤"]
-    snakeBody = map (\position -> div [blockStyle (scale position)] [text "😛"]) snake.previousPositions
+    snakeHead = div [class "head", blockStyle (scale snake.position)] [text "😎"]
+    snakeBody = map (\position -> div [blockStyle (scale position)] [text "😂"]) snake.previousPositions
     snakeNode = snakeHead :: snakeBody
 
     appleNode = case apple.position of
@@ -179,12 +181,16 @@ view ({running, snake, apple, overlays} as state) (width, height) highscore =
       |> List.map (\(_, emoji) -> div [class "overlay"] [text emoji])
       |> div []
 
+    logoNode = if not logoVisible then
+      img [src "logo.png", class "logo logo--hidden"] [] else
+      img [src "logo.png", class "logo"] []
   in
     div [class "container", containerStyle canvasSize blockSize]
       [ div [class "entities"]
          (appleNode :: snakeNode)
       , pointsNode
       , overlayNode
+      , logoNode
       ]
 
 toPixels : a -> String
@@ -303,9 +309,10 @@ stepApple apple snake input =
     apple
 
 stepGame : Input -> State -> State
-stepGame ({direction, tick, seed} as input) ({running, snake, apple, overlays, gameEndedAt} as state) =
+stepGame ({direction, tick, seed} as input) ({running, logoVisible, snake, apple, overlays, gameEndedAt} as state) =
   let
     running = state.running || direction /= None
+    logoVisible = not running
     justStarted = not state.running && running
 
     updatedApple = if justStarted then newApple apple snake seed else stepApple apple snake input
@@ -333,6 +340,7 @@ stepGame ({direction, tick, seed} as input) ({running, snake, apple, overlays, g
     else
       { state |
           running = if gameEnded then False else running,
+          logoVisible = logoVisible,
           apple = updatedApple,
           snake = updatedSnake,
           overlays = updatedOverlays,
