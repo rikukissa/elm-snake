@@ -40,15 +40,20 @@ type alias Input =
   , seed: Seed
   }
 
-type alias Apple =
+type alias Entity =
   { position: Maybe Position
-  , bonus: Bool
   }
+
+type Apple
+  = BasicApple Entity
+  | BonusApple Entity
+  | ReducerApple Entity
 
 type alias Snake =
   { position : Position
   , previousPositions : List Position
   , points : Int
+  , size: Int
   , direction : Direction
   , lastPointAt : Tick
   }
@@ -76,15 +81,15 @@ initialState =
   , logoVisible = True
   , gameEndedAt = 0
   , overlays = fromList []
-  , apple =
+  , apple = BasicApple
     { position = Nothing
-    , bonus = False
     }
   , snake =
     { position =
       { x = round (toFloat mapSize / 3)
       , y = round (toFloat mapSize / 3)
       }
+    , size = 0
     , previousPositions = []
     , points = 0
     , lastPointAt = 0
@@ -168,9 +173,21 @@ view ({running, logoVisible, snake, apple, overlays} as state) (width, height) h
     snakeBody = map (\position -> div [blockStyle (scale position)] [text "😂"]) snake.previousPositions
     snakeNode = snakeHead :: snakeBody
 
-    appleNode = case apple.position of
-      Just position -> div [blockStyle (scale position)] [text (if apple.bonus then "💎" else "🍔")]
-      _ -> div [] []
+    appleNode = case apple of
+      BasicApple apple ->
+        case apple.position of
+          Just position -> div [blockStyle (scale position)] [text "🍔"]
+          _ -> div [] []
+
+      ReducerApple apple ->
+        case apple.position of
+          Just position -> div [blockStyle (scale position)] [text "🍎"]
+          _ -> div [] []
+
+      BonusApple apple ->
+        case apple.position of
+          Just position -> div [blockStyle (scale position)] [text "💎"]
+          _ -> div [] []
 
     pointsNode = div []
       [ div [class "points"] [text (toString snake.points)]
@@ -239,7 +256,7 @@ updateDirection old new =
   else new
 
 stepSnake : Input -> Snake -> Apple -> Snake
-stepSnake ({direction, tick} as input) ({position, previousPositions, points} as snake) apple =
+stepSnake ({direction, tick} as input) ({position, previousPositions, points, size} as snake) apple =
   let
     newDirection = updateDirection snake.direction direction
     newPosition =
@@ -254,16 +271,26 @@ stepSnake ({direction, tick} as input) ({position, previousPositions, points} as
       }
     cappedPosition = capPosition newPosition
     previousPositions = snake.position :: snake.previousPositions
-    slicedPreviousPositions = take snake.points previousPositions
+    slicedPreviousPositions = take snake.size previousPositions
 
     gotPoint = snakeTouchesApple snake apple
-    applePoints = if apple.bonus then 10 else 1
+    applePoints = case apple of
+      BonusApple _ -> 10
+      _ -> 1
+
+    sizeReduction = case apple of
+      ReducerApple _ -> -4
+      _ -> 0
+
     newPoints = if gotPoint then points + applePoints else points
+    newSize = if gotPoint then size + applePoints + sizeReduction else size
+
   in
     { position = cappedPosition
     , previousPositions = slicedPreviousPositions
     , points = newPoints
     , direction = newDirection
+    , size = Basics.max 0 newSize
     , lastPointAt = if gotPoint then tick else snake.lastPointAt
     }
 
@@ -283,9 +310,18 @@ newApple apple snake seed =
       -- Get new position
       newApple apple snake seed'''
     else
-      { bonus = bonusProbability > 0.9
-      , position = Just newPosition
-      }
+      if bonusProbability > 0.9 then
+        (BonusApple
+          { position = Just newPosition
+          })
+      else if bonusProbability > 0.75 then
+        (ReducerApple
+          { position = Just newPosition
+          })
+      else
+        (BasicApple
+          { position = Just newPosition
+          })
 
 touchesSnake : Snake -> Position -> Bool
 touchesSnake snake position =
@@ -293,9 +329,17 @@ touchesSnake snake position =
 
 snakeTouchesApple : Snake -> Apple -> Bool
 snakeTouchesApple snake apple =
-  case apple.position of
-    Just position -> touchesSnake snake position
-    Nothing -> False
+  let
+    entityTouches = (\entity ->
+      case entity.position of
+        Just position -> touchesSnake snake position
+        Nothing -> False)
+  in
+    case apple of
+      BasicApple apple -> (entityTouches apple)
+      BonusApple apple -> (entityTouches apple)
+      ReducerApple apple -> (entityTouches apple)
+
 
 snakeTouchesItself : Snake -> Bool
 snakeTouchesItself snake =
